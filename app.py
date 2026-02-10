@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import math
+import matplotlib.pyplot as plt
 
 def entropy(col):
     values, counts = np.unique(col, return_counts=True)
@@ -37,7 +38,7 @@ def predict(tree, input_data):
         return predict(tree[root][val], input_data)
     return "Unknown"
 
-st.title("ID3 Decision Tree Classifier")
+st.title("ID3 Decision Tree Classifier with Graphs")
 
 data_dict = {
     "outlook": ["sunny", "sunny", "overcast", "rain", "rain", "overcast", "sunny", "sunny", "overcast", "rain", "overcast", "overcast", "rain", "sunny"],
@@ -54,12 +55,25 @@ if uploaded_file:
 target_col = st.selectbox("Target Column", df.columns, index=len(df.columns) - 1)
 features = [c for c in df.columns if c != target_col]
 
+st.subheader("Class Distribution")
+fig1, ax1 = plt.subplots()
+df[target_col].value_counts().plot(kind="bar", ax=ax1)
+st.pyplot(fig1)
+
+st.subheader("Information Gain per Feature")
+ig_values = {attr: info_gain(df, attr, target_col) for attr in features}
+fig2, ax2 = plt.subplots()
+ax2.bar(ig_values.keys(), ig_values.values())
+st.pyplot(fig2)
+
 if st.button("Train"):
     tree = id3(df, target_col, features)
     st.session_state["tree"] = tree
+    st.subheader("Decision Tree (JSON)")
     st.json(tree)
 
 if "tree" in st.session_state:
+    st.subheader("Prediction")
     inputs = {col: st.selectbox(col, df[col].unique()) for col in features}
     if st.button("Predict"):
         st.write(f"Result: {predict(st.session_state['tree'], inputs)}")
